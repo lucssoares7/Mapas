@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mapa</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
+      crossorigin="anonymous" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <script
+      src="http://code.jquery.com/jquery-latest.min.js"
+      type="text/javascript"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANuGXXHjkt__iF51ZcA-rdhFCsKnT8ldQ&libraries=places"></script>
+    <style>
+      /*
+ * Custom CSS
+ */
+
+      :root {
+        --bs-body-bg: var(--bs-gray-100);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: left; /* Isso alinha todo o conteúdo à direita */
+        align-items: center;
+        min-height: 100vh;
+        background-color: #262626;
+      }
+
+      .mapBox {
+        position: relative;
+        width: 600px;
+        height: 500px;
+
+        background: #fff;
+        border-radius: 1%;
+      }
+
+      #map {
+        height: 100%;
+      }
+
+      .pesquisar {
+        position: absolute;
+        top: 50%;
+        height: 100%;
+        right: 20px; /* Ajuste a distância da direita conforme necessário */
+        border-radius: 5%;
+      }
+      .pesquisar button {
+        width: 140px; /* Largura fixa do botão */
+        height: 40px; /* Altura fixa do botão */
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+      }
+
+      .iframe {
+        background-color: #fff;
+      }
+      .mapBox iframe {
+        width: 100%;
+        height: 100%;
+        border-radius: 1%;
+      }
+
+      .container {
+        padding: 20px;
+      }
+
+      .resultado {
+        position: absolute;
+        top: 60%;
+        right: 20px;
+        height: 10%;
+        width: 10%;
+        align-content: right;
+        background-color: aliceblue;
+      }
+
+      .input-group-local {
+        position: absolute;
+        top: 25%; /* Ajuste a altura vertical conforme necessário */
+        right: 20px; /* Ajuste a distância da direita conforme necessário */
+        width: 50%; /* Definindo a largura como 40% */
+        transform: translateY(-50%); /* Centraliza verticalmente o elemento */
+        display: flex;
+        align-items: right;
+        margin-bottom: 15px;
+      }
+
+      .input-group-local button {
+        /*padding: 0; /* Remove o preenchimento interno para definir tamanho fixo */
+        width: 140px; /* Largura fixa do botão */
+        height: 40px; /* Altura fixa do botão */
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+      }
+
+      .input-group-tipo {
+        position: absolute;
+        top: 40%; /* Ajuste a altura vertical conforme necessário */
+        right: 20px; /* Ajuste a distância da direita conforme necessário */
+        width: 50%; /* Definindo a largura como 40% */
+        transform: translateY(-50%); /* Centraliza verticalmente o elemento */
+        display: flex;
+        align-items: right;
+        margin-bottom: 15px;
+      }
+
+      .input-group-tipo button {
+        /*padding: 0; /* Remove o preenchimento interno para definir tamanho fixo */
+        width: 140px; /* Largura fixa do botão */
+        height: 40px; /* Altura fixa do botão */
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+      }
+
+      .navbar {
+        position: absolute;
+        top: 3%; /* Ajuste a altura vertical conforme necessário */
+        /*right: 20px; /* Ajuste a distância da direita conforme necessário */
+        width: 100%; /* Definindo a largura como 40% */
+        transform: translateY(-50%); /* Centraliza verticalmente o elemento */
+        display: flex;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body onload="initialize()">
+    <div class="input-group-local">
+      <button
+        class="btn btn-outline-secondary dropdown-toggle"
+        type="button"
+        data-bs-toggle="dropdown"
+        aria-expanded="false">
+        Por Bairro
+      </button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#">Por Rua</a></li>
+        <li><a class="dropdown-item" href="#">Por CEP</a></li>
+      </ul>
+      <input
+        type="text"
+        class="form-control"
+        id="bairro"
+        aria-label="Text input with dropdown button" />
+    </div>
+
+    <div class="input-group-tipo">
+      <button
+        class="btn btn-outline-secondary dropdown-toggle"
+        type="button"
+        data-bs-toggle="dropdown"
+        aria-expanded="false">
+        Por Defeito
+      </button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#">Por Grau</a></li>
+      </ul>
+      <input
+        type="text"
+        class="form-control"
+        aria-label="Text input with dropdown button" />
+    </div>
+
+    <div class="resultado">
+      <div id="latitude"></div>
+      <div id="longitude"></div>
+    </div>
+
+    <iframe
+      id="mapa"
+      width="600"
+      height="450"
+      frameborder="0"
+      style="border: 0; background-color: #f0f0f0">
+    </iframe>
+
+    <script type="text/javascript">
+      const pesquisarButton = document.getElementById("pesquisar");
+      //const latitudeDiv = document.getElementById("latitude");
+      //const longitudeDiv = document.getElementById("longitude");
+      const geocoder = new google.maps.Geocoder(); // Crie o geocodificador
+      function initialize() {
+        const bairro = document.getElementById("bairro").value;
+        //
+        pesquisarBairro(bairro);
+      }
+
+      function pesquisarBairro(bairro) {
+        return new Promise((resolve, reject) => {
+          var geocoder = new google.maps.Geocoder();
+          var inputElement = document.getElementById("bairro");
+          var autocomplete = new google.maps.places.Autocomplete(inputElement);
+
+          autocomplete.addListener("place_changed", function () {
+            var place = autocomplete.getPlace();
+
+            if (place.geometry) {
+              var location = place.geometry.location;
+              //const center = { lat:  lng: location.lng() };
+              const latitude = location.lat();
+              const longitude = location.lng();
+              geocoder.geocode(
+                { location: location },
+                function (results, status) {
+                  if (status === google.maps.GeocoderStatus.OK) {
+                    if (results[0]) {
+                      //alert("centro:" + center.lat + center.lng);
+                      const latitudeDiv = document.getElementById("latitude");
+                      latitudeDiv.textContent = latitude;
+
+                      const longitudeDiv = document.getElementById("longitude");
+                      longitudeDiv.textContent = longitude;
+
+                      const iframe = document.getElementById("mapa");
+                      iframe.src = `https://www.google.com/maps/embed/v1/place?key=AIzaSyANuGXXHjkt__iF51ZcA-rdhFCsKnT8ldQ&q=${latitude},${longitude}`;
+                      resolve(center);
+                    } else {
+                      alert(
+                        "Nenhum resultado encontrado para o local selecionado."
+                      );
+                    }
+                  } else {
+                    reject("Erro de geocodificação com status: " + status);
+                  }
+                }
+              );
+            } else {
+              reject("Nenhum resultado encontrado para o local digitado.");
+            }
+          });
+        });
+      }
+    </script>
+
+    <!-- Código JavaScript para pesquisar por bairros -->
+    <!--<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANuGXXHjkt__iF51ZcA-rdhFCsKnT8ldQ"></script>
+    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="main.js"></script>-->
+  </body>
+</html>
